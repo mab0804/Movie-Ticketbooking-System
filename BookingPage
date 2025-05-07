@@ -1,0 +1,56 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.sql.*;
+
+public class BookingPage extends JFrame {
+    public BookingPage(String username, int movieId) {
+        setTitle("Book Ticket");
+        setSize(300, 200);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+
+        JLabel ticketLabel = new JLabel("Number of Tickets:");
+        JTextField ticketField = new JTextField(5);
+        JButton confirmButton = new JButton("Confirm Booking");
+
+        JPanel panel = new JPanel();
+        panel.add(ticketLabel);
+        panel.add(ticketField);
+        panel.add(confirmButton);
+        add(panel);
+
+        confirmButton.addActionListener(e -> {
+            int tickets = Integer.parseInt(ticketField.getText());
+            try (Connection conn = DBConnection.getConnection()) {
+                // Insert booking details into database
+                PreparedStatement stmt = conn.prepareStatement("INSERT INTO bookings(user_id, movie_id, tickets) VALUES (?, ?, ?)");
+                stmt.setInt(1, getUserId(username));
+                stmt.setInt(2, movieId);
+                stmt.setInt(3, tickets);
+                stmt.executeUpdate();
+                
+                dispose();
+                new TicketPage(username, movieId, tickets); // Navigate to ticket page
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        });
+
+        setVisible(true);
+    }
+
+    private int getUserId(String username) {
+        int userId = -1;
+        try (Connection conn = DBConnection.getConnection()) {
+            PreparedStatement stmt = conn.prepareStatement("SELECT id FROM users WHERE username=?");
+            stmt.setString(1, username);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                userId = rs.getInt("id");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return userId;
+    }
+}
